@@ -21,50 +21,39 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->name('dashboard');
 
-// Routes profile publiques (optionnel - tu peux les commenter si inutiles)
+// Routes profile publiques
 Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
 Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
 Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
 // ============================================
-// ROUTES PRODUITS - PARTIE GESTION COMPLÈTE
+// ROUTES PRODUITS - CORRECT ORDER IS CRITICAL!
 // ============================================
 
-// 1. LISTE de tous les produits (page principale)
+// 1. LISTE des produits - TOUJOURS EN PREMIER
 Route::get('/products', [ProductWebController::class, 'index'])
     ->name('products.index');
 
-// 2. AFFICHER les détails d'un produit
-Route::get('/products/{product}', [ProductWebController::class, 'show'])
-    ->name('products.show');
-
-// 3. FORMULAIRE de création
+// 2. FORMULAIRE création - AVANT la route dynamique {product}
 Route::get('/products/create', [ProductWebController::class, 'create'])
     ->name('products.create');
 
-// 4. ENREGISTRER un nouveau produit
-Route::post('/products', [ProductWebController::class, 'store'])
-    ->name('products.store');
-
-// 5. FORMULAIRE de modification
+// 3. FORMULAIRE modification
 Route::get('/products/{product}/edit', [ProductWebController::class, 'edit'])
     ->name('products.edit');
 
-// 6. METTRE À JOUR un produit existant
+// 4. DÉTAILS produit - APRÈS les routes spécifiques
+Route::get('/products/{product}', [ProductWebController::class, 'show'])
+    ->name('products.show');
+
+// 5. ENREGISTRER produit
+Route::post('/products', [ProductWebController::class, 'store'])
+    ->name('products.store');
+
+// 6. METTRE À JOUR produit
 Route::put('/products/{product}', [ProductWebController::class, 'update'])
     ->name('products.update');
 
-// 7. SUPPRIMER un produit
+// 7. SUPPRIMER produit
 Route::delete('/products/{product}', [ProductWebController::class, 'destroy'])
     ->name('products.destroy');
-
-// ============================================
-// POUR VERIFIER QUE TOUTES LES ROUTES SONT BIEN DÉCLARÉES :
-// ============================================
-
-// Liste toutes les routes produits :
-// php artisan route:list --name=products
-
-// OPTIONNEL: Si tu ne veux pas du tout d'authentification,
-// commente cette ligne :
-// require __DIR__.'/auth.php';

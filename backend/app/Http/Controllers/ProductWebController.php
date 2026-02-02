@@ -1,4 +1,4 @@
-<?php  // ← PAS d'espace avant <?php !
+<?php
 
 namespace App\Http\Controllers;
 
@@ -8,35 +8,50 @@ use Inertia\Inertia;
 
 class ProductWebController extends Controller
 {
+    /**
+     * Affiche la liste de tous les produits
+     */
     public function index()
     {
         $products = Product::all();
-        
+
         return Inertia::render('Products/Index', [
             'products' => $products,
         ]);
     }
 
+    /**
+     * Affiche le formulaire de création
+     */
     public function create()
     {
         return Inertia::render('Products/Create');
     }
 
+    /**
+     * Enregistre un nouveau produit et retourne la liste mise à jour
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'         => 'required|string|max:255',
+            'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
-            'price'        => 'required|numeric|min:0',
-            'stock'        => 'required|integer|min:0',
+            'price'       => 'required|numeric|min:0',
+            'stock'       => 'required|integer|min:0',
         ]);
 
         Product::create($validated);
 
-        return redirect()->route('products.index')
-            ->with('success', 'Produit ajouté avec succès !');
+        $request->session()->flash('success', 'Produit ajouté avec succès !');
+
+        return Inertia::render('Products/Index', [
+            'products' => Product::all(),
+        ]);
     }
 
+    /**
+     * Affiche les détails d'un produit
+     */
     public function show(Product $product)
     {
         return Inertia::render('Products/Show', [
@@ -44,6 +59,9 @@ class ProductWebController extends Controller
         ]);
     }
 
+    /**
+     * Affiche le formulaire de modification
+     */
     public function edit(Product $product)
     {
         return Inertia::render('Products/Edit', [
@@ -51,26 +69,38 @@ class ProductWebController extends Controller
         ]);
     }
 
+    /**
+     * Met à jour un produit et retourne la liste mise à jour
+     */
     public function update(Request $request, Product $product)
     {
         $validated = $request->validate([
-            'name'         => 'required|string|max:255',
+            'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
-            'price'        => 'required|numeric|min:0',
-            'stock'        => 'required|integer|min:0',
+            'price'       => 'required|numeric|min:0',
+            'stock'       => 'required|integer|min:0',
         ]);
 
         $product->update($validated);
 
-        return redirect()->route('products.index')
-            ->with('success', 'Produit mis à jour avec succès !');
+        $request->session()->flash('success', 'Produit mis à jour avec succès !');
+
+        return Inertia::render('Products/Index', [
+            'products' => Product::all(),
+        ]);
     }
 
-    public function destroy(Product $product)
+    /**
+     * Supprime un produit et retourne la liste mise à jour
+     */
+    public function destroy(Request $request, Product $product)
     {
         $product->delete();
 
-        return redirect()->route('products.index')
-            ->with('success', 'Produit supprimé avec succès !');
+        $request->session()->flash('success', 'Produit supprimé avec succès !');
+
+        return Inertia::render('Products/Index', [
+            'products' => Product::all(),
+        ]);
     }
 }
