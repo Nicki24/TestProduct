@@ -40,7 +40,17 @@ class ProductWebController extends Controller
             'stock'       => 'required|integer|min:0',
         ]);
 
-        Product::create($validated);
+        // Calcul du prochain ID (réutilisation après suppression)
+        $existingIds = Product::pluck('id')->toArray();
+        $nextId = 1;
+
+        while (in_array($nextId, $existingIds)) {
+            $nextId++;
+        }
+
+        $validated['id'] = $nextId;
+
+        $product = Product::create($validated);
 
         $request->session()->flash('success', 'Produit ajouté avec succès !');
 
@@ -93,7 +103,7 @@ class ProductWebController extends Controller
     /**
      * Supprime un produit et retourne la liste mise à jour
      */
-    public function destroy(Request $request, Product $product)
+    public function destroy(Product $product)
     {
         $product->delete();
 

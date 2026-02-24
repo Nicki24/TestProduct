@@ -1,13 +1,19 @@
 // resources/js/Pages/Products/Index.jsx
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import axios from 'axios';
+import { useToastStore } from '@/stores/useToastStore'; // ← Nouveau import
 
 export default function ProductIndex({ products }) {
     const { flash } = usePage().props;
     const toastRef = useRef(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [productToDelete, setProductToDelete] = useState(null);
 
-    // Gestion de la disparition automatique du toast
+    const { successMessage, setSuccessMessage, clearSuccessMessage } = useToastStore();
+
+    // Gestion du toast flash (Inertia) + toast local persistant
     useEffect(() => {
         if (flash?.success && toastRef.current) {
             const timer = setTimeout(() => {
@@ -20,26 +26,56 @@ export default function ProductIndex({ products }) {
                         }
                     }, 600);
                 }
-            }, 4000); // 4 secondes
+            }, 4000);
 
             return () => clearTimeout(timer);
         }
     }, [flash?.success]);
 
-    // Fonction de suppression avec confirmation améliorée
-    const handleDelete = (id, name) => {
-        if (confirm(`Voulez-vous VRAIMENT supprimer le produit "${name}" ?\n\nCette action est irréversible !`)) {
-            router.delete(route('products.destroy', id), {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: () => {
-                    // Le toast apparaîtra automatiquement via le flash du controller
-                },
-                onError: (errors) => {
-                    console.error('Erreur suppression :', errors);
-                },
-            });
+    // Afficher le toast persistant après suppression
+    useEffect(() => {
+        if (successMessage && toastRef.current) {
+            const timer = setTimeout(() => {
+                clearSuccessMessage();
+            }, 4000); // 4 secondes
+
+            return () => clearTimeout(timer);
         }
+    }, [successMessage, clearSuccessMessage]);
+
+    // Ouvrir la modale
+    const openDeleteModal = (id, name) => {
+        setProductToDelete({ id, name });
+        setShowDeleteModal(true);
+    };
+
+    // Confirmer la suppression
+    const confirmDelete = () => {
+        if (!productToDelete) return;
+
+        axios.delete(`/api/products/${productToDelete.id}`)
+            .then(() => {
+                // Toast persistant + actualisation SPA de la liste
+                setSuccessMessage(`Produit "${productToDelete.name}" supprimé avec succès !`);
+                router.reload({
+                    only: ['products'],
+                    preserveState: true,
+                    preserveScroll: true,
+                });
+            })
+            .catch(() => {
+                toast.error('Erreur lors de la suppression.');
+            })
+            .finally(() => {
+                setShowDeleteModal(false);
+                setProductToDelete(null);
+            });
+    };
+
+    // Annuler
+    const cancelDelete = () => {
+        setShowDeleteModal(false);
+        setProductToDelete(null);
     };
 
     return (
@@ -52,8 +88,8 @@ export default function ProductIndex({ products }) {
         >
             <Head title="Liste des Produits" />
 
-            {/* Toast de notification temporaire */}
-            {flash?.success && (
+            {/* Toast de notification (flash + persistant) */}
+            {(flash?.success || successMessage) && (
                 <div className="fixed top-5 right-5 z-50 max-w-md w-full pointer-events-none">
                     <div
                         ref={toastRef}
@@ -68,7 +104,7 @@ export default function ProductIndex({ products }) {
                             </div>
                             <div className="ml-3">
                                 <p className="text-base font-medium text-green-800">
-                                    {flash.success}
+                                    {flash?.success || successMessage}
                                 </p>
                             </div>
                         </div>
@@ -176,7 +212,7 @@ export default function ProductIndex({ products }) {
                                                                 Modifier
                                                             </Link>
                                                             <button
-                                                                onClick={() => handleDelete(product.id, product.name)}
+                                                                onClick={() => openDeleteModal(product.id, product.name)}
                                                                 className="text-red-600 hover:text-red-800 font-medium"
                                                             >
                                                                 Supprimer
@@ -193,6 +229,46 @@ export default function ProductIndex({ products }) {
                     </div>
                 </div>
             </div>
+
+            {/* Modale de confirmation */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8">
+                        <div className="flex items-center mb-6">
+                            <div className="bg-red-100 rounded-full p-4 mr-5">
+                                <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-2xl font-bold text-gray-900">Confirmer la suppression</h3>
+                        </div>
+
+                        <p className="text-gray-600 mb-6">
+                            Voulez-vous vraiment supprimer le produit  
+                            <span className="font-bold text-red-600"> "{productToDelete?.name}"</span> ?
+                        </p>
+
+                        <p className="text-sm text-gray-500 mb-8">
+                            Cette action est irréversible.
+                        </p>
+
+                        <div className="flex justify-end gap-4">
+                            <button
+                                onClick={cancelDelete}
+                                className="px-8 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-medium"
+                            >
+                                Non, annuler
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                className="px-8 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
+                            >
+                                Oui, supprimer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AppLayout>
     );
 }
