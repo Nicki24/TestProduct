@@ -16,7 +16,7 @@ Une application web moderne de gestion de produits avec backend Laravel, fronten
 
 ## Aperçu
 
-![Capture d'écran de la liste des produits](screenshot-index.png)  
+![Capture d'écran de la liste des produits](backend/assets/Products/Capture d’écran 2026-02-21 175457.png)  
 ![Capture d'écran du formulaire de modification](screenshot-edit.png)  
 *(Ajoute tes propres captures d'écran ici)*
 
